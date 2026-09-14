@@ -1,6 +1,8 @@
 """CLI for gfi — Good First Issue finder."""
 from __future__ import annotations
 
+import csv
+import io
 import json
 import sys
 from pathlib import Path
@@ -14,6 +16,25 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from gfi.search import GitHubSearcher, Issue
 
 console = Console()
+
+
+def _render_csv(issues: list[Issue]) -> str:
+    """Format a list of Issue objects as CSV."""
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["number", "title", "repo", "url", "state", "labels", "stars", "language"])
+    for issue in issues:
+        writer.writerow([
+            issue.number,
+            issue.title,
+            issue.repo,
+            issue.url,
+            issue.state or "open",
+            " ".join(issue.labels) if issue.labels else "",
+            issue.stars,
+            issue.language or "",
+        ])
+    return output.getvalue()
 
 
 def _format_date(date_str: str) -> str:
@@ -49,24 +70,19 @@ def cli():
 @click.option("--stars-min", "-s", default=None, type=int, help="Minimum repo stars")
 @click.option("--limit", "-n", default=20, help="Max results")
 @click.option("--json-output", "json_out", is_flag=True, help="Output as JSON")
+@click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
 @click.option("--no-assigned/--assigned", default=True, help="Exclude assigned issues")
 @click.option("--created-after", default=None, help="Created after date (YYYY-MM-DD)")
 @click.option("--repos", "-r", multiple=True, help="Specific repos to search")
 @click.option("--seen/--no-seen", default=True, help="Show only unseen issues")
 def search(
-    query, label, language, stars_min, limit, json_out,
+    query, label, language, stars_min, limit, json_out, csv_out,
     no_assigned, created_after, repos, seen
 ):
     """Search for good first issues on GitHub."""
     searcher = GitHubSearcher()
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
-        task = progress.add_task("Searching GitHub...", total=None)
-
+    if json_out or csv_out:
         results = list(searcher.search(
             query=query,
             label=label,
@@ -77,11 +93,35 @@ def search(
             limit=limit,
             repos=list(repos) if repos else None,
         ))
-
         if seen:
             results = [r for r in results if not searcher.is_seen(r)]
+    else:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Searching GitHub...", total=None)
 
-        progress.update(task, completed=True)
+            results = list(searcher.search(
+                query=query,
+                label=label,
+                language=language,
+                stars_min=stars_min,
+                unassigned_only=no_assigned,
+                created_after=created_after,
+                limit=limit,
+                repos=list(repos) if repos else None,
+            ))
+
+            if seen:
+                results = [r for r in results if not searcher.is_seen(r)]
+
+            progress.update(task, completed=True)
+
+    if csv_out:
+        click.echo(_render_csv(results), nl=False)
+        return
 
     if not results:
         console.print("[yellow]No issues found matching criteria.[/yellow]")
@@ -134,23 +174,34 @@ def search(
 @click.argument("repo")
 @click.option("--limit", "-n", default=10, help="Max results")
 @click.option("--json-output", "json_out", is_flag=True, help="Output as JSON")
-def repo(repo, limit, json_out):
+@click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
+def repo(repo, limit, json_out, csv_out):
     """List good first issues in a specific repo."""
     searcher = GitHubSearcher()
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
-        task = progress.add_task(f"Searching {repo}...", total=None)
-
+    if json_out or csv_out:
         results = list(searcher.search(
             repos=[repo],
             limit=limit,
         ))
+    else:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task(f"Searching {repo}...", total=None)
 
-        progress.update(task, completed=True)
+            results = list(searcher.search(
+                repos=[repo],
+                limit=limit,
+            ))
+
+            progress.update(task, completed=True)
+
+    if csv_out:
+        click.echo(_render_csv(results), nl=False)
+        return
 
     if not results:
         console.print(f"[yellow]No good first issues found in {repo}.[/yellow]")
@@ -194,7 +245,8 @@ def repo(repo, limit, json_out):
 @cli.command()
 @click.option("--limit", "-n", default=10, help="Max results per topic")
 @click.option("--json-output", "json_out", is_flag=True, help="Output as JSON")
-def trending(limit, json_out):
+@click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
+def trending(limit, json_out, csv_out):
     """Show trending good first issues across popular repos."""
     searcher = GitHubSearcher()
 
@@ -211,25 +263,34 @@ def trending(limit, json_out):
 
     all_issues = []
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
-        task = progress.add_task("Scanning trending repos...", total=len(repos))
-
+    if json_out or csv_out:
         for repo in repos:
-            progress.update(task, description=f"Scanning {repo}...")
             issues = list(searcher.search(repos=[repo], limit=limit))
             all_issues.extend(issues)
-            progress.advance(task)
+    else:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Scanning trending repos...", total=len(repos))
+
+            for repo in repos:
+                progress.update(task, description=f"Scanning {repo}...")
+                issues = list(searcher.search(repos=[repo], limit=limit))
+                all_issues.extend(issues)
+                progress.advance(task)
+
+    # Sort by stars descending
+    all_issues.sort(key=lambda x: x.stars, reverse=True)
+
+    if csv_out:
+        click.echo(_render_csv(all_issues[:limit]), nl=False)
+        return
 
     if not all_issues:
         console.print("[yellow]No trending issues found.[/yellow]")
         return
-
-    # Sort by stars descending
-    all_issues.sort(key=lambda x: x.stars, reverse=True)
 
     if json_out:
         output = []
@@ -269,23 +330,36 @@ def trending(limit, json_out):
 @cli.command()
 @click.option("--limit", "-n", default=20, help="Max results")
 @click.option("--json-output", "json_out", is_flag=True, help="Output as JSON")
-def feed(limit, json_out):
+@click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
+def feed(limit, json_out, csv_out):
     """Show a feed of new good first issues (unseen)."""
     searcher = GitHubSearcher()
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
-        task = progress.add_task("Fetching feed...", total=None)
-
+    if json_out or csv_out:
         results = list(searcher.search(
             limit=limit * 2,  # Fetch more to filter unseen
         ))
         results = [r for r in results if not searcher.is_seen(r)][:limit]
+    else:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Fetching feed...", total=None)
 
-        progress.update(task, completed=True)
+            results = list(searcher.search(
+                limit=limit * 2,  # Fetch more to filter unseen
+            ))
+            results = [r for r in results if not searcher.is_seen(r)][:limit]
+
+            progress.update(task, completed=True)
+
+    if csv_out:
+        click.echo(_render_csv(results), nl=False)
+        for issue in results:
+            searcher.mark_seen(issue)
+        return
 
     if not results:
         console.print("[yellow]No new issues. Try again later![/yellow]")

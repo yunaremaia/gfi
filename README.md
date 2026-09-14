@@ -21,7 +21,7 @@ pip install -e .
 - **Smart search**: Auto-filters by `good first issue` label
 - **Seen tracking**: Tracks seen issues to avoid repetition
 - **Trending mode**: Scans popular repos for new opportunities
-- **JSON output**: For automation and CI integration
+- **JSON & CSV export**: For automation, CI integration, and spreadsheet analysis
 - **Rich terminal output**: Tables and panels
 
 ## Quick Start
@@ -110,13 +110,22 @@ Open a GitHub issue in the browser.
 gfi open yunaremaia/driftcheck 21
 ```
 
-## JSON Output
+## JSON & CSV Output
 
-All commands support `--json-output` for automation:
+All commands support `--json-output` for automation and `--csv` for spreadsheet analysis:
 
 ```bash
+# JSON output
 gfi search --limit 5 --json-output | jq '.[].title'
+
+# CSV export
+gfi search --limit 20 --csv > issues.csv
+gfi repo yunaremaia/driftcheck --csv > driftcheck_issues.csv
+gfi trending --limit 10 --csv > trending.csv
+gfi feed --limit 20 --csv > feed.csv
 ```
+
+CSV format includes: `number,title,repo,url,state,labels,stars,language`. Labels are space-separated within the `labels` column.
 
 ## Development
 
