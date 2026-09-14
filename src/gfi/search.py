@@ -25,6 +25,7 @@ class Issue:
     body: str = ""
     language: str = ""
     stars: int = 0
+    comments: int = 0
 
     @property
     def is_assigned(self) -> bool:
@@ -177,7 +178,7 @@ class GitHubSearcher:
         cmd = [
             "gh", "search", "issues",
             *search_query_parts,
-            "--json", "number,title,url,state,labels,assignees,createdAt,updatedAt,body",
+            "--json", "number,title,url,state,labels,assignees,createdAt,updatedAt,body,commentsCount",
             "--limit", str(limit),
         ]
 
@@ -203,6 +204,7 @@ class GitHubSearcher:
                 body=(item.get("body") or "")[:500],
                 language=self._get_language(repo),
                 stars=stars,
+                comments=item.get("commentsCount", 0),
             )
 
             if unassigned_only and issue.is_assigned:
@@ -240,7 +242,7 @@ class GitHubSearcher:
         cmd = [
             "gh", "search", "issues",
             *search_terms,
-            "--json", "number,title,repository,url,state,labels,assignees,createdAt,updatedAt,body",
+            "--json", "number,title,repository,url,state,labels,assignees,createdAt,updatedAt,body,commentsCount",
             "--sort", "updated",
             "--limit", str(limit),
         ]
@@ -273,6 +275,7 @@ class GitHubSearcher:
                 body=(item.get("body") or "")[:500],
                 language=self._get_language(repo) if repo else "",
                 stars=stars,
+                comments=item.get("commentsCount", 0),
             )
 
             if unassigned_only and issue.is_assigned:

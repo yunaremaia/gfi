@@ -1,6 +1,7 @@
 """CLI for gfi — Good First Issue finder."""
 from __future__ import annotations
 
+import csv
 import json
 import sys
 from pathlib import Path
@@ -14,6 +15,34 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from gfi.search import GitHubSearcher, Issue
 
 console = Console()
+
+CSV_COLUMNS = (
+    "number",
+    "title",
+    "repo",
+    "url",
+    "labels",
+    "created_at",
+    "comments",
+    "stars",
+)
+
+
+def _write_csv(issues: list[Issue]) -> None:
+    """Write issues as CSV to standard output."""
+    writer = csv.writer(sys.stdout, lineterminator="\n")
+    writer.writerow(CSV_COLUMNS)
+    for issue in issues:
+        writer.writerow((
+            issue.number,
+            issue.title,
+            issue.repo,
+            issue.url,
+            ", ".join(issue.labels),
+            issue.created_at,
+            issue.comments,
+            issue.stars,
+        ))
 
 
 def _format_date(date_str: str) -> str:
@@ -49,12 +78,13 @@ def cli():
 @click.option("--stars-min", "-s", default=None, type=int, help="Minimum repo stars")
 @click.option("--limit", "-n", default=20, help="Max results")
 @click.option("--json-output", "json_out", is_flag=True, help="Output as JSON")
+@click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
 @click.option("--no-assigned/--assigned", default=True, help="Exclude assigned issues")
 @click.option("--created-after", default=None, help="Created after date (YYYY-MM-DD)")
 @click.option("--repos", "-r", multiple=True, help="Specific repos to search")
 @click.option("--seen/--no-seen", default=True, help="Show only unseen issues")
 def search(
-    query, label, language, stars_min, limit, json_out,
+    query, label, language, stars_min, limit, json_out, csv_out,
     no_assigned, created_after, repos, seen
 ):
     """Search for good first issues on GitHub."""
@@ -64,6 +94,7 @@ def search(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         console=console,
+        disable=csv_out,
     ) as progress:
         task = progress.add_task("Searching GitHub...", total=None)
 
@@ -104,6 +135,10 @@ def search(
         click.echo(json.dumps(output, indent=2))
         return
 
+    if csv_out:
+        _write_csv(results)
+        return
+
     console.print(Panel(
         f"[bold]Found {len(results)} issues[/bold]",
         title="gfi — Search Results"
@@ -134,7 +169,8 @@ def search(
 @click.argument("repo")
 @click.option("--limit", "-n", default=10, help="Max results")
 @click.option("--json-output", "json_out", is_flag=True, help="Output as JSON")
-def repo(repo, limit, json_out):
+@click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
+def repo(repo, limit, json_out, csv_out):
     """List good first issues in a specific repo."""
     searcher = GitHubSearcher()
 
@@ -142,6 +178,7 @@ def repo(repo, limit, json_out):
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         console=console,
+        disable=csv_out,
     ) as progress:
         task = progress.add_task(f"Searching {repo}...", total=None)
 
@@ -170,6 +207,10 @@ def repo(repo, limit, json_out):
         click.echo(json.dumps(output, indent=2))
         return
 
+    if csv_out:
+        _write_csv(results)
+        return
+
     console.print(Panel(
         f"[bold]{repo}[/bold] — {len(results)} issues",
         title="gfi — Repo Issues"
@@ -194,7 +235,8 @@ def repo(repo, limit, json_out):
 @cli.command()
 @click.option("--limit", "-n", default=10, help="Max results per topic")
 @click.option("--json-output", "json_out", is_flag=True, help="Output as JSON")
-def trending(limit, json_out):
+@click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
+def trending(limit, json_out, csv_out):
     """Show trending good first issues across popular repos."""
     searcher = GitHubSearcher()
 
@@ -215,6 +257,7 @@ def trending(limit, json_out):
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         console=console,
+        disable=csv_out,
     ) as progress:
         task = progress.add_task("Scanning trending repos...", total=len(repos))
 
@@ -242,6 +285,10 @@ def trending(limit, json_out):
                 "stars": issue.stars,
             })
         click.echo(json.dumps(output, indent=2))
+        return
+
+    if csv_out:
+        _write_csv(all_issues[:limit])
         return
 
     console.print(Panel(

@@ -22,6 +22,7 @@ pip install -e .
 - **Seen tracking**: Tracks seen issues to avoid repetition
 - **Trending mode**: Scans popular repos for new opportunities
 - **JSON output**: For automation and CI integration
+- **CSV output**: For spreadsheets and data pipelines
 - **Rich terminal output**: Tables and panels
 
 ## Quick Start
@@ -54,6 +55,7 @@ Search globally for good first issues.
 
 ```bash
 gfi search --language python --stars-min 100 --limit 10
+gfi search --language python --stars-min 100 --csv
 gfi search --repos kubernetes/kubernetes --repos microsoft/vscode
 gfi search --no-assigned  # Include assigned issues
 gfi search --created-after 2026-08-01  # Recent issues only
@@ -66,6 +68,7 @@ List good first issues in a specific repository.
 ```bash
 gfi repo anchore/grype --limit 10
 gfi repo yunaremaia/driftcheck --json-output
+gfi repo anchore/grype --limit 5 --csv
 ```
 
 ### `gfi trending`
@@ -75,6 +78,7 @@ Show trending good first issues across popular repositories.
 ```bash
 gfi trending --limit 20
 gfi trending --json-output > trending.json
+gfi trending --limit 10 --csv > trending.csv
 ```
 
 ### `gfi feed`
@@ -116,6 +120,15 @@ All commands support `--json-output` for automation:
 
 ```bash
 gfi search --limit 5 --json-output | jq '.[].title'
+```
+
+## CSV Output
+
+The `search`, `repo`, and `trending` commands support `--csv` for spreadsheet
+imports and data pipelines:
+
+```bash
+gfi search --language python --stars-min 100 --csv > issues.csv
 ```
 
 ## Development
