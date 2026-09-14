@@ -138,6 +138,10 @@ pip install -e ".[dev]"
 pytest
 ```
 
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, test instructions, and contribution guidelines.
+
 ## License
 
 MIT
