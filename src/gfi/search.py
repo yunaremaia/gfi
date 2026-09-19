@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterator
+from urllib.parse import quote
 
 
 @dataclass
@@ -84,7 +85,8 @@ class GitHubSearcher:
 
     def _get_stars(self, repo: str) -> int:
         """Get star count for a repo."""
-        cmd = ["gh", "api", f"repos/{repo}", "--jq", ".stargazers_count"]
+        safe_repo = quote(repo, safe="")
+        cmd = ["gh", "api", f"repos/{safe_repo}", "--jq", ".stargazers_count"]
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
@@ -95,7 +97,8 @@ class GitHubSearcher:
 
     def _get_language(self, repo: str) -> str:
         """Get primary language for a repo."""
-        cmd = ["gh", "api", f"repos/{repo}", "--jq", ".language"]
+        safe_repo = quote(repo, safe="")
+        cmd = ["gh", "api", f"repos/{safe_repo}", "--jq", ".language"]
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
