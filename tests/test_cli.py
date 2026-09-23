@@ -42,6 +42,9 @@ def fake_searcher(monkeypatch, issues):
         def is_seen(self, issue):
             return False
 
+        def mark_seen(self, issue):
+            return None
+
     monkeypatch.setattr("gfi.cli.GitHubSearcher", FakeSearcher)
 
 
@@ -82,6 +85,7 @@ def test_search_csv_has_exact_header_and_escaped_rows(fake_searcher):
     [
         (["repo", "owner/project", "--csv"], 3),
         (["trending", "--limit", "2", "--csv"], 3),
+        (["feed", "--limit", "2", "--csv"], 3),
     ],
 )
 def test_other_commands_support_csv(fake_searcher, args, expected_rows):

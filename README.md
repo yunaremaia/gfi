@@ -112,6 +112,7 @@ Show a feed of unseen good first issues. Marks issues as seen automatically.
 ```bash
 gfi feed --limit 20
 gfi feed --limit 50 --json-output
+gfi feed --limit 20 --csv > feed.csv
 ```
 
 ### `gfi stats`
@@ -148,7 +149,7 @@ gfi search --limit 5 --json-output | jq '.[].title'
 
 ## CSV Output
 
-The `search`, `repo`, and `trending` commands support `--csv` for spreadsheet
+The `search`, `repo`, `trending`, and `feed` commands support `--csv` for spreadsheet
 imports and data pipelines:
 
 ```bash
