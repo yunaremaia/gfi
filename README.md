@@ -112,6 +112,7 @@ Show a feed of unseen good first issues. Marks issues as seen automatically.
 ```bash
 gfi feed --limit 20
 gfi feed --limit 50 --json-output
+gfi feed --limit 20 --csv > feed.csv
 ```
 
 ### `gfi stats`
