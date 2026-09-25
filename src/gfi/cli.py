@@ -316,7 +316,8 @@ def trending(limit, json_out, csv_out):
 @cli.command()
 @click.option("--limit", "-n", default=20, help="Max results")
 @click.option("--json-output", "json_out", is_flag=True, help="Output as JSON")
-def feed(limit, json_out):
+@click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
+def feed(limit, json_out, csv_out):
     """Show a feed of new good first issues (unseen)."""
     searcher = GitHubSearcher()
 
@@ -324,6 +325,7 @@ def feed(limit, json_out):
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         console=console,
+        disable=csv_out,
     ) as progress:
         task = progress.add_task("Fetching feed...", total=None)
 
@@ -350,6 +352,10 @@ def feed(limit, json_out):
                 "language": issue.language,
             })
         click.echo(json.dumps(output, indent=2))
+        return
+
+    if csv_out:
+        _write_csv(results)
         return
 
     console.print(Panel(
