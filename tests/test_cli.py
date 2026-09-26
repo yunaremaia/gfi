@@ -42,6 +42,18 @@ def fake_searcher(monkeypatch, issues):
         def is_seen(self, issue):
             return False
 
+        def _seen_key(self, issue):
+            return issue.url or f"{issue.repo}#{issue.number}"
+
+        def sort_deterministicly(self, issues):
+            return sorted(
+                issues,
+                key=lambda i: (i.stars, i.created_at or ""),
+                reverse=True,
+            )
+
+        _seen = {}
+
     monkeypatch.setattr("gfi.cli.GitHubSearcher", FakeSearcher)
 
 

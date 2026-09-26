@@ -105,6 +105,8 @@ gfi search --language python --stars-min 100 --csv
 gfi search --repos kubernetes/kubernetes --repos microsoft/vscode
 gfi search --no-assigned  # Include assigned issues
 gfi search --created-after 2026-08-01  # Recent issues only
+gfi search --max-age-days 30  # Issues opened in last 30 days
+gfi search --repo-max-age-days 90  # Repos active in last 90 days
 ```
 
 ### `gfi repo REPO`
@@ -134,6 +136,7 @@ Show a feed of unseen good first issues. Marks issues as seen automatically.
 ```bash
 gfi feed --limit 20
 gfi feed --limit 50 --json-output
+gfi feed --limit 20 --csv > feed.csv
 ```
 
 ### `gfi stats`

@@ -85,13 +85,45 @@ def cli():
 @click.option("--repo-max-age-days", default=None, type=int, help="Only show repos active within N days")
 @click.option("--repos", "-r", multiple=True, help="Specific repos to search")
 @click.option("--seen/--no-seen", default=True, help="Show only unseen issues")
+@click.option("--mark-seen", "mark_seen_url", default=None, help="Mark a specific issue URL as seen")
+@click.option("--show-seen", "show_seen", is_flag=True, help="List all marked issues")
 def search(
     query, label, language, stars_min, limit, json_out, csv_out,
     no_assigned, created_after, max_age_days, repo_max_age_days,
-    repos, seen
+    repos, seen, mark_seen_url, show_seen
 ):
     """Search for good first issues on GitHub."""
     searcher = GitHubSearcher()
+
+    if show_seen:
+        seen_items = sorted(
+            searcher._seen.items(),
+            key=lambda x: x[1].get("seen_at", ""),
+            reverse=True,
+        )
+        if not seen_items:
+            console.print("[yellow]No issues marked as seen.[/yellow]")
+            return
+        console.print(
+            Panel(
+                f"[bold]Marked Issues ({len(seen_items)})[/bold]",
+                title="gfi — Seen Issues",
+            )
+        )
+        table = Table()
+        table.add_column("URL", width=55)
+        table.add_column("Seen At", width=20)
+        for url, meta in seen_items[:50]:
+            table.add_row(_truncate(url, 53), meta.get("seen_at", "—")[:19])
+        console.print(table)
+        return
+
+    if mark_seen_url:
+        searcher.mark_seen(
+            Issue(url=mark_seen_url, number=0, title="", repo="", state="")
+        )
+        console.print(f"[green]Marked as seen: {mark_seen_url}[/green]")
+        return
 
     with Progress(
         SpinnerColumn(),
@@ -114,8 +146,11 @@ def search(
             repos=list(repos) if repos else None,
         ))
 
+        # Deterministic sort by (stars desc, created_at desc)
+        results = searcher.sort_deterministicly(results)
+
         if seen:
-            results = [r for r in results if not searcher.is_seen(r)]
+            results = [r for r in results if searcher._seen_key(r) not in searcher._seen]
 
         progress.update(task, completed=True)
 
