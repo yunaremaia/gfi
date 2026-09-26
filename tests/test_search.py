@@ -217,7 +217,7 @@ class TestSearchRepo:
     def test_skips_repo_below_stars_min_without_calling_gh(self, mock_run, searcher):
         results = list(searcher._search_repo(
             "owner/repo", "query", "good first issue", "open", None,
-            stars_min=200, unassigned_only=True, created_after=None,
+            200, True, None,
             max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
