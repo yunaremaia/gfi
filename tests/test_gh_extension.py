@@ -33,12 +33,19 @@ def test_gh_extension_version():
             mock_cli.assert_called_once_with()
 
 
-def test_gh_extension_script_installed():
+def test_gh_extension_script_installed() -> None:
     """Test that gh-gfi script is installed by pip."""
+    import shutil
+    # The script should be on PATH after pip install
+    gfi_path = shutil.which("gh-gfi")
+    assert gfi_path is not None, (
+        "gh-gfi not found on PATH — check pyproject.toml [project.scripts]"
+    )
     result = subprocess.run(
-        ["pip", "show", "-f", "gfi"],
+        ["gh-gfi", "--version"],
         capture_output=True,
         text=True,
+        timeout=10,
     )
-    # Check that the script is listed in the package files
-    assert "gh-gfi" in result.stdout or result.returncode == 1  # may not be installed in test env
+    # Either prints version or invokes CLI (which has its own --version handling)
+    assert result.returncode == 0, f"gh-gfi --version failed: {result.stderr}"
