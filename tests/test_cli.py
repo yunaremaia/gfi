@@ -52,6 +52,8 @@ def fake_searcher(monkeypatch, issues):
                 reverse=True,
             )
 
+        _seen = {}
+
     monkeypatch.setattr("gfi.cli.GitHubSearcher", FakeSearcher)
 
 
