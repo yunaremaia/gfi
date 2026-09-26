@@ -51,21 +51,21 @@ class GitHubSearcher:
     """Search GitHub issues using gh CLI."""
 
     def __init__(self, cache_dir: Path | None = None):
-        self.cache_dir = cache_dir or Path("/tmp/gfi-cache")
+        self.cache_dir = cache_dir or Path.home() / ".gfi"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.seen_file = self.cache_dir / "seen.json"
         self._seen = self._load_seen()
 
-    def _load_seen(self) -> set[str]:
+    def _load_seen(self) -> dict[str, dict]:
         if self.seen_file.exists():
             try:
-                return set(json.loads(self.seen_file.read_text()))
-            except json.JSONDecodeError:
+                return json.loads(self.seen_file.read_text())
+            except (json.JSONDecodeError, TypeError):
                 pass
-        return set()
+        return {}
 
     def _save_seen(self) -> None:
-        self.seen_file.write_text(json.dumps(list(self._seen), indent=2))
+        self.seen_file.write_text(json.dumps(self._seen, indent=2))
 
     def _run_gh(self, args: list[str]) -> dict | list:
         """Run gh CLI and return JSON output."""
@@ -345,22 +345,33 @@ class GitHubSearcher:
 
             yield issue
 
+    def _seen_key(self, issue: Issue) -> str:
+        """Return the dedup key for an issue: URL preferred, repo+number fallback."""
+        return issue.url or f"{issue.repo}#{issue.number}"
+
     def mark_seen(self, issue: Issue) -> None:
-        """Mark an issue as seen."""
-        key = f"{issue.repo}#{issue.number}"
-        self._seen.add(key)
+        """Mark an issue as seen, keyed by URL for cross-query dedup."""
+        key = self._seen_key(issue)
+        self._seen[key] = {"seen_at": datetime.now().isoformat()}
         self._save_seen()
 
     def is_seen(self, issue: Issue) -> bool:
-        """Check if issue was previously seen."""
-        key = f"{issue.repo}#{issue.number}"
-        return key in self._seen
+        """Check if issue was previously seen, by URL (or repo+number fallback)."""
+        return self._seen_key(issue) in self._seen
 
     def filter_unseen(self, issues: Iterator[Issue]) -> Iterator[Issue]:
         """Yield only issues not previously seen."""
         for issue in issues:
-            if not self.is_seen(issue):
+            if self._seen_key(issue) not in self._seen:
                 yield issue
+
+    def sort_deterministicly(self, issues: list[Issue]) -> list[Issue]:
+        """Sort issues deterministically by (stars desc, created_at desc)."""
+        return sorted(
+            issues,
+            key=lambda i: (i.stars, i.created_at or ""),
+            reverse=True,
+        )
 
 
 class HotTopics:
