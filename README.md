@@ -83,6 +83,8 @@ gfi search --language python --stars-min 100 --csv
 gfi search --repos kubernetes/kubernetes --repos microsoft/vscode
 gfi search --no-assigned  # Include assigned issues
 gfi search --created-after 2026-08-01  # Recent issues only
+gfi search --max-age-days 30  # Issues opened in last 30 days
+gfi search --repo-max-age-days 90  # Repos active in last 90 days
 ```
 
 ### `gfi repo REPO`

@@ -81,11 +81,14 @@ def cli():
 @click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
 @click.option("--no-assigned/--assigned", default=True, help="Exclude assigned issues")
 @click.option("--created-after", default=None, help="Created after date (YYYY-MM-DD)")
+@click.option("--max-age-days", default=None, type=int, help="Only show issues newer than N days")
+@click.option("--repo-max-age-days", default=None, type=int, help="Only show repos active within N days")
 @click.option("--repos", "-r", multiple=True, help="Specific repos to search")
 @click.option("--seen/--no-seen", default=True, help="Show only unseen issues")
 def search(
     query, label, language, stars_min, limit, json_out, csv_out,
-    no_assigned, created_after, repos, seen
+    no_assigned, created_after, max_age_days, repo_max_age_days,
+    repos, seen
 ):
     """Search for good first issues on GitHub."""
     searcher = GitHubSearcher()
@@ -105,6 +108,8 @@ def search(
             stars_min=stars_min,
             unassigned_only=no_assigned,
             created_after=created_after,
+            max_age_days=max_age_days,
+            repo_max_age_days=repo_max_age_days,
             limit=limit,
             repos=list(repos) if repos else None,
         ))

@@ -12,11 +12,13 @@ Classifier: Programming Language :: Python :: 3
 Classifier: Topic :: Software Development :: Libraries
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
+License-File: LICENSE
 Requires-Dist: click>=8.1
 Requires-Dist: rich>=13.0
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0; extra == "dev"
 Requires-Dist: pytest-cov>=4.0; extra == "dev"
+Dynamic: license-file
 
 # gfi — Good First Issue Finder
 
@@ -34,6 +36,30 @@ Or from source:
 git clone https://github.com/yunaremaia/gfi.git
 cd gfi
 pip install -e .
+```
+
+### GitHub CLI Extension (gh gfi)
+
+You can also use gfi as a GitHub CLI extension:
+
+```bash
+# Install the package
+pip install gfi
+
+# The gh-gfi wrapper is installed as a script
+# Add ~/.local/bin to PATH if needed
+export PATH="$HOME/.local/bin:$PATH"
+
+# Run via gh CLI
+gh gfi search --limit 10
+gh gfi trending
+gh gfi feed
+```
+
+Or run the install script:
+
+```bash
+./install-gh-extension.sh
 ```
 
 ## Features

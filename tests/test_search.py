@@ -189,7 +189,8 @@ class TestSearchRepo:
 
         list(searcher._search_repo(
             "owner/repo", "query", "good first issue", "open", None,
-            None, True, None, 20,
+            None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         cmd = mock_run.call_args[0][0]
@@ -205,7 +206,8 @@ class TestSearchRepo:
 
         list(searcher._search_repo(
             "owner/repo", "query", "good first issue", "open", None,
-            None, True, "2026-08-01", 20,
+            None, True, "2026-08-01",
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         cmd = mock_run.call_args[0][0]
@@ -215,7 +217,8 @@ class TestSearchRepo:
     def test_skips_repo_below_stars_min_without_calling_gh(self, mock_run, searcher):
         results = list(searcher._search_repo(
             "owner/repo", "query", "good first issue", "open", None,
-            stars_min=200, unassigned_only=True, created_after=None, limit=20,
+            stars_min=200, unassigned_only=True, created_after=None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         assert results == []
@@ -225,7 +228,8 @@ class TestSearchRepo:
     def test_skips_repo_with_mismatched_language(self, mock_run, searcher):
         results = list(searcher._search_repo(
             "owner/repo", "query", "good first issue", "open", "Rust",
-            None, True, None, 20,
+            None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         assert results == []
@@ -249,7 +253,8 @@ class TestSearchRepo:
 
         results = list(searcher._search_repo(
             "owner/repo", "query", "good first issue", "open", None,
-            None, True, None, 20,
+            None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         assert len(results) == 1
@@ -279,7 +284,8 @@ class TestSearchRepo:
 
         results = list(searcher._search_repo(
             "owner/repo", "query", "good first issue", "open", None,
-            None, True, None, 20,
+            None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         assert results == []
@@ -290,7 +296,8 @@ class TestSearchRepo:
 
         results = list(searcher._search_repo(
             "owner/repo", "query", "good first issue", "open", None,
-            None, True, None, 20,
+            None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         assert results == []
@@ -301,7 +308,8 @@ class TestSearchRepo:
 
         results = list(searcher._search_repo(
             "owner/repo", "query", "good first issue", "open", None,
-            None, True, None, 20,
+            None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         assert results == []
@@ -311,7 +319,8 @@ class TestSearchRepo:
                     side_effect=subprocess.TimeoutExpired(cmd="gh", timeout=30)):
             results = list(searcher._search_repo(
                 "owner/repo", "query", "good first issue", "open", None,
-                None, True, None, 20,
+                None, True, None,
+                max_age_days=None, repo_max_age_days=None, limit=20,
             ))
 
         assert results == []
@@ -330,7 +339,8 @@ class TestSearchGlobal:
         mock_run.return_value = _gh_result(stdout="[]")
 
         list(searcher._search_global(
-            "query", "good first issue", "open", None, None, True, None, 20,
+            "query", "good first issue", "open", None, None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         cmd = mock_run.call_args[0][0]
@@ -345,7 +355,8 @@ class TestSearchGlobal:
 
         list(searcher._search_global(
             "query", "good first issue", "open", "Python", None, True,
-            "2026-08-01", 20,
+            "2026-08-01",
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         cmd = mock_run.call_args[0][0]
@@ -370,7 +381,8 @@ class TestSearchGlobal:
         mock_run.return_value = _gh_result(stdout=payload)
 
         results = list(searcher._search_global(
-            "query", "good first issue", "open", None, None, True, None, 20,
+            "query", "good first issue", "open", None, None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         assert len(results) == 1
@@ -397,7 +409,8 @@ class TestSearchGlobal:
 
         results = list(searcher._search_global(
             "query", "good first issue", "open", None, stars_min=100,
-            unassigned_only=True, created_after=None, limit=20,
+            unassigned_only=True, created_after=None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         assert results == []
@@ -420,7 +433,8 @@ class TestSearchGlobal:
         mock_run.return_value = _gh_result(stdout=payload)
 
         results = list(searcher._search_global(
-            "query", "good first issue", "open", None, None, True, None, 20,
+            "query", "good first issue", "open", None, None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         assert results == []
@@ -430,7 +444,8 @@ class TestSearchGlobal:
         mock_run.return_value = _gh_result(returncode=1, stdout="")
 
         results = list(searcher._search_global(
-            "query", "good first issue", "open", None, None, True, None, 20,
+            "query", "good first issue", "open", None, None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         assert results == []
@@ -440,7 +455,8 @@ class TestSearchGlobal:
         mock_run.return_value = _gh_result(stdout="not json")
 
         results = list(searcher._search_global(
-            "query", "good first issue", "open", None, None, True, None, 20,
+            "query", "good first issue", "open", None, None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
         ))
 
         assert results == []
@@ -449,7 +465,8 @@ class TestSearchGlobal:
         with patch("gfi.search.subprocess.run",
                     side_effect=subprocess.TimeoutExpired(cmd="gh", timeout=30)):
             results = list(searcher._search_global(
-                "query", "good first issue", "open", None, None, True, None, 20,
+                "query", "good first issue", "open", None, None, True, None,
+                max_age_days=None, repo_max_age_days=None, limit=20,
             ))
 
         assert results == []

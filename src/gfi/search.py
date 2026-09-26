@@ -108,6 +108,20 @@ class GitHubSearcher:
             pass
         return ""
 
+    def _get_repo_push_date(self, repo: str) -> datetime | None:
+        """Get last push date for a repo."""
+        safe_repo = quote(repo, safe="")
+        cmd = ["gh", "api", f"repos/{safe_repo}", "--jq", ".pushed_at"]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                pushed_str = result.stdout.strip().strip('"')
+                if pushed_str:
+                    return datetime.fromisoformat(pushed_str.replace("Z", "+00:00"))
+        except (ValueError, subprocess.TimeoutExpired):
+            pass
+        return None
+
     def search(
         self,
         query: str = "good first issue",
@@ -117,6 +131,8 @@ class GitHubSearcher:
         stars_min: int | None = None,
         unassigned_only: bool = True,
         created_after: str | None = None,
+        max_age_days: int | None = None,
+        repo_max_age_days: int | None = None,
         limit: int = 20,
         repos: list[str] | None = None,
     ) -> Iterator[Issue]:
@@ -130,6 +146,8 @@ class GitHubSearcher:
             stars_min: Minimum repo stars
             unassigned_only: Only return unassigned issues
             created_after: ISO date (e.g., "2026-08-01")
+            max_age_days: Only include issues newer than this many days
+            repo_max_age_days: Only include repos active within this many days
             limit: Max results
             repos: Specific repos to search (e.g., ["owner/repo"])
         """
@@ -137,12 +155,18 @@ class GitHubSearcher:
             for repo in repos:
                 yield from self._search_repo(
                     repo, query, label, state, language,
-                    stars_min, unassigned_only, created_after, limit
+                    stars_min, unassigned_only, created_after,
+                    max_age_days=max_age_days,
+                    repo_max_age_days=repo_max_age_days,
+                    limit=limit,
                 )
         else:
             yield from self._search_global(
                 query, label, state, language,
-                stars_min, unassigned_only, created_after, limit
+                stars_min, unassigned_only, created_after,
+                max_age_days=max_age_days,
+                repo_max_age_days=repo_max_age_days,
+                limit=limit,
             )
 
     def _search_repo(
@@ -155,7 +179,10 @@ class GitHubSearcher:
         stars_min: int | None,
         unassigned_only: bool,
         created_after: str | None,
-        limit: int,
+        *,
+        max_age_days: int | None = None,
+        repo_max_age_days: int | None = None,
+        limit: int = 20,
     ) -> Iterator[Issue]:
         """Search within a specific repo."""
         # First check stars threshold
@@ -212,6 +239,21 @@ class GitHubSearcher:
 
             if unassigned_only and issue.is_assigned:
                 continue
+
+            # Filter by max issue age
+            if max_age_days is not None:
+                age = issue.age_days()
+                if age is not None and age > max_age_days:
+                    continue
+
+            # Filter by repo activity
+            if repo_max_age_days is not None:
+                push_date = self._get_repo_push_date(repo)
+                if push_date is not None:
+                    days_since_push = (datetime.now(push_date.tzinfo) - push_date).days
+                    if days_since_push > repo_max_age_days:
+                        continue
+
             yield issue
 
 
@@ -225,7 +267,10 @@ class GitHubSearcher:
         stars_min: int | None,
         unassigned_only: bool,
         created_after: str | None,
-        limit: int,
+        *,
+        max_age_days: int | None = None,
+        repo_max_age_days: int | None = None,
+        limit: int = 20,
     ) -> Iterator[Issue]:
         """Search globally across GitHub."""
         # Build search query - use hyphenated label form (GitHub search compatible)
@@ -283,6 +328,21 @@ class GitHubSearcher:
 
             if unassigned_only and issue.is_assigned:
                 continue
+
+            # Filter by max issue age
+            if max_age_days is not None:
+                age = issue.age_days()
+                if age is not None and age > max_age_days:
+                    continue
+
+            # Filter by repo activity
+            if repo_max_age_days is not None:
+                push_date = self._get_repo_push_date(repo)
+                if push_date is not None:
+                    days_since_push = (datetime.now(push_date.tzinfo) - push_date).days
+                    if days_since_push > repo_max_age_days:
+                        continue
+
             yield issue
 
     def mark_seen(self, issue: Issue) -> None:
