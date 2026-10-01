@@ -27,7 +27,7 @@ Search and filter GitHub issues for contributors. Built for autonomous workflows
 ## Install
 
 ```bash
-pip install gfi
+pip install git+https://github.com/yunaremaia/gfi.git
 ```
 
 Or from source:
@@ -44,7 +44,7 @@ You can also use gfi as a GitHub CLI extension:
 
 ```bash
 # Install the package
-pip install gfi
+pip install git+https://github.com/yunaremaia/gfi.git
 
 # The gh-gfi wrapper is installed as a script
 # Add ~/.local/bin to PATH if needed
