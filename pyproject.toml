@@ -35,3 +35,16 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coverage.report]
+# Enforced gate: `pytest --cov=gfi` now fails the run (non-zero exit) when the
+# measured total drops below this number, instead of only printing a number.
+#
+# Measured baseline on origin/main: 66.04% (282/427 statements).
+# coverage compares `round(total, 0) < fail_under`, so the baseline rounds to 66.
+# A gate of 66 would sit ~0.04 points below the real total and break CI after a
+# couple of uncovered statements, so the floor is set to 60: it keeps ~6 points
+# of headroom (about 26 statements) and still catches real regressions.
+#
+# Raise this number as the suite grows -- never silently lower it to make CI green.
+fail_under = 60

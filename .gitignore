@@ -1,3 +1,10 @@
 __pycache__/
 *.py[cod]
 src/gfi.egg-info/
+
+# coverage / test artifacts
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
