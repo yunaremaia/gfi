@@ -11,6 +11,24 @@ from typing import Iterator
 from urllib.parse import quote
 
 
+def quote_search_value(value: str) -> str:
+    """Quote a user-supplied value for use as a GitHub search qualifier value.
+
+    Search terms are passed to GitHub as a `gh search issues` argument list, so
+    percent-encoding is wrong here (gh would search for a literal ``%20``).
+    What the search parser needs is a quoted value with its own backslashes and
+    double quotes escaped, otherwise a label like ``needs "urgent"`` closes the
+    quote early and the remaining words are parsed as new qualifiers.
+    """
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def search_qualifier(name: str, value: str) -> str:
+    """Build a single ``name:"value"`` search qualifier."""
+    return f"{name}:{quote_search_value(value)}"
+
+
 @dataclass
 class Issue:
     """A GitHub issue with relevant metadata."""
@@ -192,14 +210,13 @@ class GitHubSearcher:
         if language and self._get_language(repo) != language:
             return
 
-        # Build search query - use hyphenated label form (GitHub search compatible)
-        label_alt = label.replace(" ", "-")
-
+        # Build search query - quote label/user values so spaces and quotes
+        # inside them are treated as data rather than query syntax.
         search_query_parts = [
             query,
             f"repo:{repo}",
             "is:issue",
-            f"label:{label_alt}",
+            search_qualifier("label", label),
             f"state:{state}",
         ]
         if created_after:
@@ -208,7 +225,7 @@ class GitHubSearcher:
         # gh search needs each term as separate arg, not a single string
         cmd = [
             "gh", "search", "issues",
-            *search_query_parts,
+            *[t for t in search_query_parts if t.strip()],
             "--json", "number,title,url,state,labels,assignees,createdAt,updatedAt,body,commentsCount",
             "--limit", str(limit),
         ]
@@ -274,25 +291,25 @@ class GitHubSearcher:
         limit: int = 20,
     ) -> Iterator[Issue]:
         """Search globally across GitHub."""
-        # Build search query - use hyphenated label form (GitHub search compatible)
-        label_alt = label.replace(" ", "-")
+        # Build search query - quote label/language so spaces and quotes inside
+        # them are treated as data rather than query syntax.
         search_terms = [
             query,
             "is:issue",
-            f"label:{label_alt}",
+            search_qualifier("label", label),
             f"state:{state}",
         ]
         if unassigned_only:
             search_terms.append("no:assignee")
         if language:
-            search_terms.append(f"language:{language}")
+            search_terms.append(search_qualifier("language", language))
         if created_after:
             search_terms.append(f"created:>={created_after}")
 
         # gh search needs each term as separate arg, not a single string
         cmd = [
             "gh", "search", "issues",
-            *search_terms,
+            *[t for t in search_terms if t.strip()],
             "--json", "number,title,repository,url,state,labels,assignees,createdAt,updatedAt,body,commentsCount",
             "--sort", "updated",
             "--limit", str(limit),

@@ -184,7 +184,7 @@ class TestSearchRepo:
         return s
 
     @patch("gfi.search.subprocess.run")
-    def test_builds_command_with_hyphenated_label_and_repo(self, mock_run, searcher):
+    def test_builds_command_with_quoted_label_and_repo(self, mock_run, searcher):
         mock_run.return_value = _gh_result(stdout="[]")
 
         list(searcher._search_repo(
@@ -196,7 +196,9 @@ class TestSearchRepo:
         cmd = mock_run.call_args[0][0]
         assert "repo:owner/repo" in cmd
         assert "is:issue" in cmd
-        assert "label:good-first-issue" in cmd
+        # The label keeps its space inside a quoted value; hyphenating it would
+        # silently search for a different label (see #41).
+        assert 'label:"good first issue"' in cmd
         assert "state:open" in cmd
         assert not any(part.startswith("created:") for part in cmd)
 
@@ -348,7 +350,7 @@ class TestSearchGlobal:
         return s
 
     @patch("gfi.search.subprocess.run")
-    def test_builds_command_with_no_assignee_and_hyphenated_label(self, mock_run, searcher):
+    def test_builds_command_with_no_assignee_and_quoted_label(self, mock_run, searcher):
         mock_run.return_value = _gh_result(stdout="[]")
 
         list(searcher._search_global(
@@ -358,7 +360,7 @@ class TestSearchGlobal:
 
         cmd = mock_run.call_args[0][0]
         assert "is:issue" in cmd
-        assert "label:good-first-issue" in cmd
+        assert 'label:"good first issue"' in cmd
         assert "state:open" in cmd
         assert "no:assignee" in cmd
 
@@ -397,7 +399,7 @@ class TestSearchGlobal:
         ))
 
         cmd = mock_run.call_args[0][0]
-        assert "language:Python" in cmd
+        assert 'language:"Python"' in cmd
         assert "created:>=2026-08-01" in cmd
 
     @patch("gfi.search.subprocess.run")
