@@ -36,6 +36,9 @@ def issues():
 @pytest.fixture
 def fake_searcher(monkeypatch, issues):
     class FakeSearcher:
+        def __init__(self):
+            self.marked = []
+
         def search(self, **kwargs):
             return iter(issues)
 
@@ -51,6 +54,13 @@ def fake_searcher(monkeypatch, issues):
                 key=lambda i: (i.stars, i.created_at or ""),
                 reverse=True,
             )
+
+        # Mirrors GitHubSearcher.mark_seen, which `feed` calls in every output
+        # format. Without it this double raised AttributeError as soon as
+        # `feed --csv` reached the marking loop -- the very line the early
+        # return used to skip, which is how that bug stayed invisible here.
+        def mark_seen(self, issue):
+            self.marked.append(issue)
 
         _seen = {}
 

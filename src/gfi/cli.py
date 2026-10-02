@@ -413,36 +413,38 @@ def feed(limit, json_out, csv_out):
                 "language": issue.language,
             })
         click.echo(json.dumps(output, indent=2))
-        return
-
-    if csv_out:
+    elif csv_out:
         _write_csv(results)
-        return
+    else:
+        console.print(Panel(
+            f"[bold]Fresh Feed[/bold> — {len(results)} new issues",
+            title="gfi — Feed"
+        ))
 
-    console.print(Panel(
-        f"[bold]Fresh Feed[/bold] — {len(results)} new issues",
-        title="gfi — Feed"
-    ))
+        table = Table(show_lines=True)
+        table.add_column("#", style="cyan", width=6)
+        table.add_column("Title", width=50)
+        table.add_column("Repo", width=25)
+        table.add_column("Stars", justify="right", width=8)
+        table.add_column("Lang", width=10)
 
-    table = Table(show_lines=True)
-    table.add_column("#", style="cyan", width=6)
-    table.add_column("Title", width=50)
-    table.add_column("Repo", width=25)
-    table.add_column("Stars", justify="right", width=8)
-    table.add_column("Lang", width=10)
+        for issue in results:
+            table.add_row(
+                str(issue.number),
+                _truncate(issue.title, 48),
+                _truncate(issue.repo, 23),
+                f"⭐ {issue.stars}" if issue.stars else "—",
+                issue.language or "—",
+            )
 
-    for issue in results:
-        table.add_row(
-            str(issue.number),
-            _truncate(issue.title, 48),
-            _truncate(issue.repo, 23),
-            f"⭐ {issue.stars}" if issue.stars else "—",
-            issue.language or "—",
-        )
+        console.print(table)
 
-    console.print(table)
-
-    # Mark as seen
+    # Mark as seen -- in every output format, and after the payload has been
+    # delivered. This loop used to sit at the end of the human-only branch, so
+    # the --json-output and --csv branches returned before reaching it: scripted
+    # callers got their payload but the seen cache never grew, so every run
+    # handed back the same issues. Keeping it below the emit is deliberate -- an
+    # issue is only consumed once it has actually been shown.
     for issue in results:
         searcher.mark_seen(issue)
 
