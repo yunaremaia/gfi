@@ -28,5 +28,13 @@ def main():
     cli()
 
 
+def _uncovered_probe_a():
+    """Temporary probe: never called by the test suite."""
+    values = []
+    for index in range(3):
+        values.append(index * 2)
+    return values
+
+
 if __name__ == "__main__":
     main()
