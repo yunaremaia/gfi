@@ -2,12 +2,11 @@
 from __future__ import annotations
 
 import json
-import re
 import subprocess
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Iterator
 from urllib.parse import quote
 
 
@@ -226,7 +225,9 @@ class GitHubSearcher:
         cmd = [
             "gh", "search", "issues",
             *[t for t in search_query_parts if t.strip()],
-            "--json", "number,title,url,state,labels,assignees,createdAt,updatedAt,body,commentsCount",
+            "--json",
+            "number,title,url,state,labels,assignees,"
+            "createdAt,updatedAt,body,commentsCount",
             "--limit", str(limit),
         ]
 
@@ -245,7 +246,9 @@ class GitHubSearcher:
                 repo=repo,
                 url=item.get("url", ""),
                 state=item.get("state", ""),
-                labels=[l.get("name", "") for l in item.get("labels", [])],
+                labels=[
+                    label.get("name", "") for label in item.get("labels", [])
+                ],
                 assignees=[a.get("login", "") for a in item.get("assignees", [])],
                 created_at=item.get("createdAt", ""),
                 updated_at=item.get("updatedAt", ""),
@@ -310,7 +313,9 @@ class GitHubSearcher:
         cmd = [
             "gh", "search", "issues",
             *[t for t in search_terms if t.strip()],
-            "--json", "number,title,repository,url,state,labels,assignees,createdAt,updatedAt,body,commentsCount",
+            "--json",
+            "number,title,repository,url,state,labels,assignees,"
+            "createdAt,updatedAt,body,commentsCount",
             "--sort", "updated",
             "--limit", str(limit),
         ]
@@ -336,7 +341,9 @@ class GitHubSearcher:
                 repo=repo,
                 url=item.get("url", ""),
                 state=item.get("state", ""),
-                labels=[l.get("name", "") for l in item.get("labels", [])],
+                labels=[
+                    label.get("name", "") for label in item.get("labels", [])
+                ],
                 assignees=[a.get("login", "") for a in item.get("assignees", [])],
                 created_at=item.get("createdAt", ""),
                 updated_at=item.get("updatedAt", ""),

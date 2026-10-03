@@ -1,7 +1,6 @@
 """Tests for gfi search."""
 import json
 import subprocess
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -350,7 +349,9 @@ class TestSearchGlobal:
         return s
 
     @patch("gfi.search.subprocess.run")
-    def test_builds_command_with_no_assignee_and_quoted_label(self, mock_run, searcher):
+    def test_builds_command_with_no_assignee_and_quoted_label(
+        self, mock_run, searcher
+    ):
         mock_run.return_value = _gh_result(stdout="[]")
 
         list(searcher._search_global(
@@ -377,7 +378,9 @@ class TestSearchGlobal:
         assert "my-search-term" in cmd
 
     @patch("gfi.search.subprocess.run")
-    def test_search_global_excludes_no_assignee_when_unassigned_only_false(self, mock_run, searcher):
+    def test_search_global_excludes_no_assignee_when_unassigned_only_false(
+        self, mock_run, searcher
+    ):
         mock_run.return_value = _gh_result(stdout="[]")
 
         list(searcher._search_global(

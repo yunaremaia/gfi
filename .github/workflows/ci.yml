@@ -15,10 +15,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -32,15 +32,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
       - name: Install gfi with dev dependencies
         run: pip install -e ".[dev]"
 
-      - name: Run tests (lint gate)
-        run: pytest
+      # Ruff is installed from the `dev` extra so the linter version CI uses is
+      # the one declared in pyproject.toml, not a number hardcoded here.
+      #
+      # The rule set (E, F, I, UP, B) lives in [tool.ruff.lint] in
+      # pyproject.toml. Fix the code a violation points at -- do not silence it
+      # with a blanket `# ruff: noqa`, which would defeat the point of this gate.
+      - name: Lint with ruff
+        run: ruff check .

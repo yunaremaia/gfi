@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0", "pytest-cov>=4.0"]
+dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.6.0"]
 
 [project.scripts]
 gfi = "gfi.cli:cli"
@@ -36,15 +36,53 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# E  pycodestyle errors (incl. E501 line length)
+# F  pyflakes (dead code, undefined names, unused imports)
+# I  isort (import order/formatting)
+# UP pyupgrade (modern syntax for the declared Python floor)
+# B  flake8-bugbear (likely-bug patterns)
+#
+# This is the real lint gate enforced by the `lint` job in CI. Fix the code --
+# never silence a whole file with a blanket `# ruff: noqa`.
+select = ["E", "F", "I", "UP", "B"]
+
 [tool.coverage.report]
-# Enforced gate: `pytest --cov=gfi` now fails the run (non-zero exit) when the
-# measured total drops below this number, instead of only printing a number.
+# Enforced gate: `pytest --cov=gfi` fails the run (non-zero exit) when the
+# measured total is below this number, instead of only printing a number.
 #
-# Measured baseline on origin/main: 66.04% (282/427 statements).
-# coverage compares `round(total, 0) < fail_under`, so the baseline rounds to 66.
-# A gate of 66 would sit ~0.04 points below the real total and break CI after a
-# couple of uncovered statements, so the floor is set to 60: it keeps ~6 points
-# of headroom (about 26 statements) and still catches real regressions.
+# MEASURED BASELINE: 78.75% (341/433 statements), 109 tests passing.
 #
-# Raise this number as the suite grows -- never silently lower it to make CI green.
-fail_under = 60
+# WHY THE FLOOR IS floor(78.75) = 78, NOT 79
+#
+# There are two different fail_under comparisons in play, and they do NOT
+# round the same way:
+#
+#   1. coverage.py -- coverage/results.py:should_fail_under()
+#          return round(total, precision) < fail_under
+#      Rounds first. An 78.75% total rounds to 79, so `79 < 79` is False
+#      and a gate of 79 would pass.
+#
+#   2. pytest-cov -- pytest_cov/plugin.py, pytest_terminal_summary()
+#          failed = self.cov_total < self.options.cov_fail_under
+#      NO rounding. 78.75 < 79 is True, so a gate of 79 FAILS.
+#
+# CI runs `pytest --cov=gfi`, so check #2 is the one that actually decides the
+# run. The rounding argument in #1 does not apply here: a floor set to
+# round(measured) was measured to fail CI on this tree.
+#
+# So: set the floor to floor(the measured percentage), never round() it up.
+#
+# (The 66.04% / 282-of-427 figure this file used to record was stale: it predates
+# #68, #70, #72 and #73. The old floor of 60 therefore sat ~19 points under the
+# real baseline and could not have failed on a real regression.)
+#
+# Raise this number as coverage genuinely improves. Never lower it to make CI
+# green -- add a test instead.
+fail_under = 78
+

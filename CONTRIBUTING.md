@@ -80,7 +80,15 @@ The extension entry point is declared in `pyproject.toml` under `[project.script
 
 1. Fork the repo and create a branch from `main`.
 2. Make your change on the branch.
-3. Run `pytest` (and `ruff`/`black` if you have them configured) locally.
+3. Run the same checks CI runs, locally:
+   ```bash
+   pip install -e ".[dev]"
+   ruff check .
+   pytest --cov=gfi --cov-report=term-missing
+   ```
+   `ruff check .` is enforced by the `lint` CI job, and `pytest` enforces the
+   `fail_under` coverage floor from `pyproject.toml`. Fix what ruff reports —
+   please don't silence a whole file with a blanket `# ruff: noqa`.
 4. Open a PR against `main`. Link any related issue with `Closes #N` or `Fixes #N` in the PR body.
 
 PRs don't need to be perfect on first submission — the maintainer will review and iterate with you.

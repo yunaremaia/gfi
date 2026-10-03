@@ -4,13 +4,12 @@ from __future__ import annotations
 import csv
 import json
 import sys
-from pathlib import Path
 
 import click
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
 
 from gfi.search import GitHubSearcher, Issue
 
@@ -100,11 +99,20 @@ def cli():
 @click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
 @click.option("--no-assigned/--assigned", default=True, help="Exclude assigned issues")
 @click.option("--created-after", default=None, help="Created after date (YYYY-MM-DD)")
-@click.option("--max-age-days", default=None, type=int, help="Only show issues newer than N days")
-@click.option("--repo-max-age-days", default=None, type=int, help="Only show repos active within N days")
+@click.option(
+    "--max-age-days", default=None, type=int,
+    help="Only show issues newer than N days",
+)
+@click.option(
+    "--repo-max-age-days", default=None, type=int,
+    help="Only show repos active within N days",
+)
 @click.option("--repos", "-r", multiple=True, help="Specific repos to search")
 @click.option("--seen/--no-seen", default=True, help="Show only unseen issues")
-@click.option("--mark-seen", "mark_seen_url", default=None, help="Mark a specific issue URL as seen")
+@click.option(
+    "--mark-seen", "mark_seen_url", default=None,
+    help="Mark a specific issue URL as seen",
+)
 @click.option("--show-seen", "show_seen", is_flag=True, help="List all marked issues")
 def search(
     query, label, language, stars_min, limit, json_out, csv_out,
@@ -169,7 +177,10 @@ def search(
         results = searcher.sort_deterministicly(results)
 
         if seen:
-            results = [r for r in results if searcher._seen_key(r) not in searcher._seen]
+            results = [
+                r for r in results
+                if searcher._seen_key(r) not in searcher._seen
+            ]
 
         progress.update(task, completed=True)
 
@@ -353,7 +364,8 @@ def trending(limit, json_out, csv_out):
         return
 
     console.print(Panel(
-        f"[bold]Trending Good First Issues[/bold]\n{len(all_issues)} issues across {len(repos)} repos",
+        f"[bold]Trending Good First Issues[/bold]\n"
+        f"{len(all_issues)} issues across {len(repos)} repos",
         title="gfi — Trending"
     ))
 

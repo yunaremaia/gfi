@@ -1,6 +1,6 @@
 """gfi — Good First Issue finder for GitHub contributors."""
-from gfi.search import GitHubSearcher, Issue, HotTopics
 from gfi.gh_extension import main as gh_extension_main
+from gfi.search import GitHubSearcher, HotTopics, Issue
 
 __version__ = "0.1.0"
 

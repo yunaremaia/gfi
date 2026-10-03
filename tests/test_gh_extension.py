@@ -1,10 +1,7 @@
 """Tests for gfi GitHub CLI extension mode."""
 import subprocess
 import sys
-from pathlib import Path
 from unittest.mock import patch
-
-import pytest
 
 from gfi.gh_extension import main
 
