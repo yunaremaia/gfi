@@ -43,13 +43,22 @@ jobs:
         run: pip install -e ".[dev]"
 
       # Ruff is installed from the `dev` extra so the linter version CI uses is
-      # the one declared in pyproject.toml, not a number hardcoded here.
+      # the one declared in pyproject.toml, not a number hardcoded here. That
+      # extra pins `ruff==0.16.10` exactly: a floating range would let a new
+      # ruff release change what this gate reports, reddening CI without any
+      # code change. Bump the pin in a PR, deliberately.
       #
       # The rule set (E, F, I, UP, B) lives in [tool.ruff.lint] in
       # pyproject.toml. Fix the code a violation points at -- do not silence it
       # with a blanket `# ruff: noqa`, which would defeat the point of this gate.
+      #
+      # This step is a real gate: it fails the run on any finding. It was added
+      # with the tree already clean (ruff 0.16.10, `ruff check .` -> 0 findings
+      # against the pinned rule set), so no `--exit-zero` baseline was needed.
       - name: Lint with ruff
-        run: ruff check .
+        run: |
+          ruff --version
+          ruff check --no-cache .
 
   # Issue #30 asked for a CI check that the gh extension builds. A build here
   # means "gh can actually discover and execute it": gh clones the repo and
