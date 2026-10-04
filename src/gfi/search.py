@@ -219,7 +219,7 @@ class GitHubSearcher:
         stars = self._get_stars(repo)
         if stars_min and stars < stars_min:
             return
-        if language and self._get_language(repo) != language:
+        if language and self._get_language(repo).casefold() != language.casefold():
             return
 
         # Build search query - quote label/user values so spaces and quotes
