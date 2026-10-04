@@ -10,6 +10,19 @@ from pathlib import Path
 from urllib.parse import quote
 
 
+def _safe_repo_path(repo: str) -> str:
+    """Build the ``owner/repo`` path for a `gh api repos/:owner/:repo` endpoint.
+
+    Each segment is percent-encoded individually so the separating ``/``
+    survives.  Encoding the whole string at once turns that ``/`` into
+    ``%2F``, producing ``repos/owner%2Frepo``, which GitHub answers with 404.
+    This is a path, not a query value, so ``safe=""`` is exactly wrong for it.
+
+    Reported by @Jah-yee in #80.
+    """
+    return "/".join(quote(seg, safe="") for seg in repo.split("/"))
+
+
 def quote_search_value(value: str) -> str:
     """Quote a user-supplied value for use as a GitHub search qualifier value.
 
@@ -102,8 +115,10 @@ class GitHubSearcher:
 
     def _get_stars(self, repo: str) -> int:
         """Get star count for a repo."""
-        safe_repo = quote(repo, safe="")
-        cmd = ["gh", "api", f"repos/{safe_repo}", "--jq", ".stargazers_count"]
+        cmd = [
+            "gh", "api", f"repos/{_safe_repo_path(repo)}",
+            "--jq", ".stargazers_count",
+        ]
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
@@ -114,8 +129,7 @@ class GitHubSearcher:
 
     def _get_language(self, repo: str) -> str:
         """Get primary language for a repo."""
-        safe_repo = quote(repo, safe="")
-        cmd = ["gh", "api", f"repos/{safe_repo}", "--jq", ".language"]
+        cmd = ["gh", "api", f"repos/{_safe_repo_path(repo)}", "--jq", ".language"]
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
@@ -127,8 +141,7 @@ class GitHubSearcher:
 
     def _get_repo_push_date(self, repo: str) -> datetime | None:
         """Get last push date for a repo."""
-        safe_repo = quote(repo, safe="")
-        cmd = ["gh", "api", f"repos/{safe_repo}", "--jq", ".pushed_at"]
+        cmd = ["gh", "api", f"repos/{_safe_repo_path(repo)}", "--jq", ".pushed_at"]
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
             if result.returncode == 0:

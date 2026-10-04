@@ -99,7 +99,7 @@ class TestGetStars:
 
         assert searcher._get_stars("owner/repo") == 42
         cmd = mock_run.call_args[0][0]
-        assert "repos/owner%2Frepo" in cmd
+        assert "repos/owner/repo" in cmd
 
     @patch("gfi.search.subprocess.run")
     def test_returns_zero_on_nonzero_exit(self, mock_run, searcher):
@@ -130,7 +130,7 @@ class TestGetLanguage:
 
         assert searcher._get_language("owner/repo") == "Python"
         cmd = mock_run.call_args[0][0]
-        assert "repos/owner%2Frepo" in cmd
+        assert "repos/owner/repo" in cmd
 
     @patch("gfi.search.subprocess.run")
     def test_returns_empty_on_nonzero_exit(self, mock_run, searcher):
