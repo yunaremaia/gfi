@@ -16,10 +16,10 @@ def main():
     # We need to strip the 'gh-' prefix and pass remaining args to gfi
     args = sys.argv[1:]
 
-    # If first arg is a gfi subcommand, pass through
-    # Otherwise, show gfi help
-    if not args or args[0] in ("--help", "-h", "--version"):
-        # Show gfi help
+    # Empty invocation and explicit help flags show help. `--version` is not
+    # help: click's version_option handles it, and folding it into this branch
+    # rewrote `gh gfi --version` to `gfi --help` (#91).
+    if not args or args[0] in ("--help", "-h"):
         sys.argv = ["gfi", "--help"]
     else:
         sys.argv = ["gfi"] + args
