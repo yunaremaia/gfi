@@ -148,6 +148,25 @@ class TestNoDoubleEscaping:
                 f"double-escaping: {terms}"
             )
 
+    def test_quote_search_value_does_not_exist(self):
+        """Guard against re-introducing the double-escaping bug.
+
+        The ``quote_search_value`` function was removed in the fix for #82.
+        If someone re-adds it, this test fails immediately.
+        """
+        import gfi.search as search_module
+        assert not hasattr(search_module, "quote_search_value"), (
+            "quote_search_value was re-introduced; it double-escapes values "
+            "and causes every search to return zero results (#82)"
+        )
+
+    def test_search_qualifier_returns_bare_value(self):
+        """search_qualifier must not add quotes around the value."""
+        from gfi.search import search_qualifier
+        assert search_qualifier("label", "good first issue") == "label:good first issue"
+        assert search_qualifier("label", "simple") == "label:simple"
+        assert search_qualifier("language", "Python") == "language:Python"
+
 
 class TestFreeTextQueryIntegrity:
     """The free-text query is data: it must arrive as exactly one argv element."""
