@@ -41,12 +41,31 @@ def test_gh_extension_help():
 
 
 def test_gh_extension_version():
-    """Test that gh extension shows version."""
+    """`--version` is forwarded so click prints the version, not help (#91)."""
     with patch.object(sys, "argv", ["gh-gfi", "--version"]):
         with patch("gfi.gh_extension.cli") as mock_cli:
             main()
-            assert sys.argv == ["gfi", "--help"]
+            assert sys.argv == ["gfi", "--version"]
             mock_cli.assert_called_once_with(prog_name="gh gfi")
+
+
+def test_gh_extension_root_script_prints_version():
+    """The root script extension must print a version, not the help text.
+
+    `gh gfi --version` used to take the help branch and exit 0 with usage text,
+    which is indistinguishable from a successful help request (#91).
+    """
+    result = subprocess.run(
+        [str(REPO_ROOT / "gh-gfi"), "--version"],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        cwd=REPO_ROOT,
+        env={**os.environ, "PYTHON": sys.executable},
+    )
+    assert result.returncode == 0, f"gh-gfi --version failed: {result.stderr}"
+    assert "version 0.1.0" in result.stdout, result.stdout
+    assert not result.stdout.lstrip().startswith("Usage:"), result.stdout
 
 
 def test_gh_extension_script_declared_in_pyproject():
@@ -132,7 +151,7 @@ def test_gh_extension_script_installed() -> None:
     # The script should be on PATH after pip install
     gfi_path = shutil.which("gh-gfi")
     assert gfi_path is not None, (
-        "gh-gfi not found on PATH — check pyproject.toml [project.scripts]"
+        "gh-gfi not found on PATH \u2014 check pyproject.toml [project.scripts]"
     )
     result = subprocess.run(
         [gfi_path, "--version"],
