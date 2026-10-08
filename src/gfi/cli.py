@@ -72,6 +72,12 @@ def _write_csv(issues: list[Issue]) -> None:
         writer.writerow(tuple(_csv_safe(col) for col in row))
 
 
+def _gh_available() -> bool:
+    """Check if gh CLI is available on PATH."""
+    import shutil
+    return shutil.which("gh") is not None
+
+
 def _notify_empty(json_out: bool, csv_out: bool, message: str) -> None:
     """Report an empty result set without corrupting machine-readable stdout.
 
@@ -145,6 +151,14 @@ def search(
     repos, seen, mark_seen_url, show_seen
 ):
     """Search for good first issues on GitHub."""
+    if not _gh_available():
+        msg = "gh CLI not found. Please install GitHub CLI: https://cli.github.com/"
+        if json_out:
+            click.echo(json.dumps({"error": msg}))
+        else:
+            err_console.print(f"[red]{msg}[/red]")
+        return
+
     searcher = GitHubSearcher()
 
     if show_seen:
@@ -267,6 +281,14 @@ def search(
 @click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
 def repo(repo, limit, json_out, csv_out):
     """List good first issues in a specific repo."""
+    if not _gh_available():
+        msg = "gh CLI not found. Please install GitHub CLI: https://cli.github.com/"
+        if json_out:
+            click.echo(json.dumps({"error": msg}))
+        else:
+            err_console.print(f"[red]{msg}[/red]")
+        return
+
     searcher = GitHubSearcher()
 
     with Progress(
@@ -335,6 +357,14 @@ def repo(repo, limit, json_out, csv_out):
 @click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
 def trending(limit, json_out, csv_out):
     """Show trending good first issues across popular repos."""
+    if not _gh_available():
+        msg = "gh CLI not found. Please install GitHub CLI: https://cli.github.com/"
+        if json_out:
+            click.echo(json.dumps({"error": msg}))
+        else:
+            err_console.print(f"[red]{msg}[/red]")
+        return
+
     searcher = GitHubSearcher()
 
     # Popular repos with good first issues
@@ -417,6 +447,14 @@ def trending(limit, json_out, csv_out):
 @click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
 def feed(limit, json_out, csv_out):
     """Show a feed of new good first issues (unseen)."""
+    if not _gh_available():
+        msg = "gh CLI not found. Please install GitHub CLI: https://cli.github.com/"
+        if json_out:
+            click.echo(json.dumps({"error": msg}))
+        else:
+            err_console.print(f"[red]{msg}[/red]")
+        return
+
     searcher = GitHubSearcher()
 
     with Progress(

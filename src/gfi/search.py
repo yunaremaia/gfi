@@ -105,7 +105,7 @@ class GitHubSearcher:
             if result.returncode != 0:
                 return {} if "--json" in args else []
             return json.loads(result.stdout)
-        except (subprocess.TimeoutExpired, json.JSONDecodeError):
+        except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
             return {} if "--json" in args else []
 
     def _get_stars(self, repo: str) -> int:
@@ -118,7 +118,7 @@ class GitHubSearcher:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
                 return int(result.stdout.strip())
-        except (ValueError, subprocess.TimeoutExpired):
+        except (ValueError, subprocess.TimeoutExpired, FileNotFoundError):
             pass
         return 0
 
@@ -130,7 +130,7 @@ class GitHubSearcher:
             if result.returncode == 0:
                 lang = result.stdout.strip().strip('"')
                 return lang
-        except subprocess.TimeoutExpired:
+        except (subprocess.TimeoutExpired, FileNotFoundError):
             pass
         return ""
 
@@ -143,7 +143,7 @@ class GitHubSearcher:
                 pushed_str = result.stdout.strip().strip('"')
                 if pushed_str:
                     return datetime.fromisoformat(pushed_str.replace("Z", "+00:00"))
-        except (ValueError, subprocess.TimeoutExpired):
+        except (ValueError, subprocess.TimeoutExpired, FileNotFoundError):
             pass
         return None
 
@@ -244,7 +244,7 @@ class GitHubSearcher:
             if result.returncode != 0:
                 return
             items = json.loads(result.stdout)
-        except (subprocess.TimeoutExpired, json.JSONDecodeError):
+        except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
             return
 
         for item in items:
@@ -333,7 +333,7 @@ class GitHubSearcher:
             if result.returncode != 0:
                 return
             items = json.loads(result.stdout)
-        except (subprocess.TimeoutExpired, json.JSONDecodeError):
+        except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
             return
 
         for item in items:
