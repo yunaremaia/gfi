@@ -403,7 +403,7 @@ def trending(limit, json_out, csv_out):
 
     if json_out:
         output = []
-        for issue in all_issues[:limit]:
+        for issue in all_issues:
             output.append({
                 "number": issue.number,
                 "title": issue.title,
@@ -415,7 +415,7 @@ def trending(limit, json_out, csv_out):
         return
 
     if csv_out:
-        _write_csv(all_issues[:limit])
+        _write_csv(all_issues)
         return
 
     console.print(Panel(
@@ -430,7 +430,7 @@ def trending(limit, json_out, csv_out):
     table.add_column("Repo", width=25)
     table.add_column("Stars", justify="right", width=8)
 
-    for issue in all_issues[:limit]:
+    for issue in all_issues:
         table.add_row(
             str(issue.number),
             _truncate(issue.title, 48),
