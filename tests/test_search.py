@@ -513,3 +513,93 @@ class TestSearchGlobal:
             ))
 
         assert results == []
+
+
+class TestLimitClampWarning:
+    """Tests for the stderr warning when --limit exceeds the 1000 ceiling."""
+
+    @pytest.fixture
+    def searcher(self, tmp_path):
+        s = GitHubSearcher(cache_dir=tmp_path / "cache")
+        s._get_stars = lambda repo: 100
+        s._get_language = lambda repo: "Python"
+        return s
+
+    @patch("gfi.search.subprocess.run")
+    def test_warns_on_stderr_when_limit_exceeds_1000_repo(
+        self, mock_run, searcher, capsys
+    ):
+        mock_run.return_value = _gh_result(stdout="[]")
+
+        list(searcher._search_repo(
+            "owner/repo", "query", "good first issue", "open", None,
+            None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=1500,
+        ))
+
+        captured = capsys.readouterr()
+        assert "1000" in captured.err
+        assert "1500" in captured.err
+        assert captured.out == ""
+
+    @patch("gfi.search.subprocess.run")
+    def test_warns_on_stderr_when_limit_exceeds_1000_global(
+        self, mock_run, searcher, capsys
+    ):
+        mock_run.return_value = _gh_result(stdout="[]")
+
+        list(searcher._search_global(
+            "query", "good first issue", "open", None, None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=2000,
+        ))
+
+        captured = capsys.readouterr()
+        assert "1000" in captured.err
+        assert "2000" in captured.err
+        assert captured.out == ""
+
+    @patch("gfi.search.subprocess.run")
+    def test_no_warning_when_limit_at_1000(
+        self, mock_run, searcher, capsys
+    ):
+        mock_run.return_value = _gh_result(stdout="[]")
+
+        list(searcher._search_repo(
+            "owner/repo", "query", "good first issue", "open", None,
+            None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=1000,
+        ))
+
+        captured = capsys.readouterr()
+        assert captured.err == ""
+
+    @patch("gfi.search.subprocess.run")
+    def test_no_warning_when_limit_below_1000(
+        self, mock_run, searcher, capsys
+    ):
+        mock_run.return_value = _gh_result(stdout="[]")
+
+        list(searcher._search_repo(
+            "owner/repo", "query", "good first issue", "open", None,
+            None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=500,
+        ))
+
+        captured = capsys.readouterr()
+        assert captured.err == ""
+
+    @patch("gfi.search.subprocess.run")
+    def test_clamped_limit_still_passed_to_gh(
+        self, mock_run, searcher, capsys
+    ):
+        mock_run.return_value = _gh_result(stdout="[]")
+
+        list(searcher._search_repo(
+            "owner/repo", "query", "good first issue", "open", None,
+            None, True, None,
+            max_age_days=None, repo_max_age_days=None, limit=1500,
+        ))
+
+        cmd = mock_run.call_args[0][0]
+        limit_idx = cmd.index("--limit")
+        assert cmd[limit_idx + 1] == "1000"
