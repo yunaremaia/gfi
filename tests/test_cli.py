@@ -180,3 +180,31 @@ def test_csv_safe_preserves_numeric_and_safe_strings():
     assert _csv_safe("\r=1+2") == "'\r=1+2"
     assert _csv_safe("") == ""
 
+def test_open_exits_nonzero_when_no_opener(monkeypatch):
+    """gfi open must not claim success when no browser opener is available."""
+    monkeypatch.setattr("shutil.which", lambda name: None)
+
+    result = CliRunner().invoke(cli, ["open", "owner/project", "1"])
+
+    assert result.exit_code == 1
+    assert "No browser opener found" in result.output
+
+
+def test_open_exits_nonzero_when_opener_fails(monkeypatch):
+    """gfi open must report failure when the opener returns a non-zero code."""
+    monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/xdg-open")
+
+    class FakeResult:
+        returncode = 3
+        stderr = "stub: refusing to open"
+
+    def fake_run(*args, **kwargs):
+        return FakeResult()
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+
+    result = CliRunner().invoke(cli, ["open", "owner/project", "1"])
+
+    assert result.exit_code == 1
+    assert "Failed to open" in result.output
+
