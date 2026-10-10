@@ -550,7 +550,25 @@ def reset():
 @click.argument("number", type=int)
 def open(repo, number):
     """Open a GitHub issue in the browser."""
+    import shutil
     import subprocess
+
     url = f"https://github.com/{repo}/issues/{number}"
-    subprocess.run(["xdg-open", url], capture_output=True)
+
+    opener = shutil.which("xdg-open") or shutil.which("open")
+    if opener is None:
+        console.print(
+            f"[red]No browser opener found (looked for xdg-open and open).[/red] "
+            f"Open manually: {url}"
+        )
+        raise SystemExit(1)
+
+    result = subprocess.run([opener, url], capture_output=True, text=True)
+    if result.returncode != 0:
+        detail = (result.stderr or "").strip()
+        console.print(f"[red]Failed to open {url}[/red]")
+        if detail:
+            console.print(f"[dim]{detail}[/dim]")
+        raise SystemExit(1)
+
     console.print(f"[dim]Opened: {url}[/dim]")
