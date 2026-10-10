@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
+from rich.text import Text
 
 from gfi.search import GitHubSearcher, Issue
 
@@ -106,11 +107,11 @@ def _format_date(date_str: str) -> str:
         return date_str[:10]
 
 
-def _truncate(text: str, length: int = 60) -> str:
-    """Truncate text with ellipsis."""
-    if len(text) <= length:
-        return text
-    return text[:length-3] + "..."
+def _truncate(text: str, length: int = 60) -> Text:
+    """Truncate text with ellipsis as literal (markup-free) Rich text."""
+    if len(text) > length:
+        text = text[:length - 3] + "..."
+    return Text(text)
 
 
 @click.group()
