@@ -603,3 +603,44 @@ class TestLimitClampWarning:
         cmd = mock_run.call_args[0][0]
         limit_idx = cmd.index("--limit")
         assert cmd[limit_idx + 1] == "1000"
+    @patch("gfi.search.subprocess.run")
+    def test_excludes_issues_when_language_does_not_match(self, mock_run, searcher):
+        payload = json.dumps([{
+            "number": 12,
+            "title": "Issue in python repo",
+            "repository": {"nameWithOwner": "psf/requests"},
+            "url": "https://github.com/psf/requests/issues/12",
+            "state": "open",
+            "labels": [{"name": "good first issue"}],
+            "assignees": [],
+            "createdAt": "",
+            "updatedAt": "",
+            "body": "",
+            "commentsCount": 0,
+        }])
+
+        def fake_run(cmd, *args, **kwargs):
+            if "search" in cmd:
+                return _gh_result(stdout=payload)
+            if "repos/psf/requests" in " ".join(cmd):
+                return _gh_result(stdout='"Python"\n')
+            return _gh_result()
+
+        mock_run.side_effect = fake_run
+
+        # Case-insensitive match succeeds
+        results_matching = list(searcher._search_global(
+            "query", "good first issue", "open", language="python", stars_min=None,
+            unassigned_only=True, created_after=None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
+        ))
+        assert len(results_matching) == 1
+        assert results_matching[0].number == 12
+
+        # Unrecognised/mismatched language is filtered out
+        results_mismatched = list(searcher._search_global(
+            "query", "good first issue", "open", language="rustt", stars_min=None,
+            unassigned_only=True, created_after=None,
+            max_age_days=None, repo_max_age_days=None, limit=20,
+        ))
+        assert results_mismatched == []

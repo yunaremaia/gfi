@@ -359,6 +359,10 @@ class GitHubSearcher:
             if stars_min and stars < stars_min:
                 continue
 
+            repo_lang = self._get_language(repo) if repo else ""
+            if language and repo_lang.casefold() != language.casefold():
+                continue
+
             issue = Issue(
                 number=item.get("number", 0),
                 title=item.get("title", ""),
@@ -372,7 +376,7 @@ class GitHubSearcher:
                 created_at=item.get("createdAt", ""),
                 updated_at=item.get("updatedAt", ""),
                 body=(item.get("body") or "")[:500],
-                language=self._get_language(repo) if repo else "",
+                language=repo_lang,
                 stars=stars,
                 comments=item.get("commentsCount", 0),
             )

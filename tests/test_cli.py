@@ -103,7 +103,7 @@ def test_search_csv_has_exact_header_and_escaped_rows(fake_searcher):
     ("args", "expected_rows"),
     [
         (["repo", "owner/project", "--csv"], 3),
-        (["trending", "--limit", "2", "--csv"], 3),
+        (["trending", "--limit", "2", "--csv"], 15),
         (["feed", "--csv"], 3),
     ],
 )
@@ -179,4 +179,65 @@ def test_csv_safe_preserves_numeric_and_safe_strings():
     assert _csv_safe("\t=1+2") == "'\t=1+2"
     assert _csv_safe("\r=1+2") == "'\r=1+2"
     assert _csv_safe("") == ""
+
+
+def test_trending_preserves_per_topic_results_json(monkeypatch):
+    recorded_limits = []
+
+    class FakeTrendingSearcher:
+        def search(self, repos=None, limit=None, **kwargs):
+            recorded_limits.append((repos, limit))
+            repo_name = repos[0] if repos else "repo"
+            return iter([
+                Issue(
+                    number=1,
+                    title=f"Issue from {repo_name}",
+                    repo=repo_name,
+                    url=f"https://github.com/{repo_name}/issues/1",
+                    state="open",
+                    stars=100,
+                )
+            ])
+
+    monkeypatch.setattr("gfi.cli._gh_available", lambda: True)
+    monkeypatch.setattr("gfi.cli.GitHubSearcher", FakeTrendingSearcher)
+
+    result = CliRunner().invoke(cli, ["trending", "--limit", "3", "--json-output"])
+    assert result.exit_code == 0
+    import json
+    data = json.loads(result.output)
+    # 7 trending repos are scanned, each yielding 1 issue.
+    # The output should contain all 7 issues, not truncated to 3 globally.
+    assert len(data) == 7
+    # Verify limit=3 was passed per topic/repo to searcher
+    assert all(lim == 3 for _, lim in recorded_limits)
+    assert len(recorded_limits) == 7
+
+def test_open_exits_nonzero_when_no_opener(monkeypatch):
+    """gfi open must not claim success when no browser opener is available."""
+    monkeypatch.setattr("shutil.which", lambda name: None)
+
+    result = CliRunner().invoke(cli, ["open", "owner/project", "1"])
+
+    assert result.exit_code == 1
+    assert "No browser opener found" in result.output
+
+
+def test_open_exits_nonzero_when_opener_fails(monkeypatch):
+    """gfi open must report failure when the opener returns a non-zero code."""
+    monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/xdg-open")
+
+    class FakeResult:
+        returncode = 3
+        stderr = "stub: refusing to open"
+
+    def fake_run(*args, **kwargs):
+        return FakeResult()
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+
+    result = CliRunner().invoke(cli, ["open", "owner/project", "1"])
+
+    assert result.exit_code == 1
+    assert "Failed to open" in result.output
 
