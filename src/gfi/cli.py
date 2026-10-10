@@ -126,7 +126,7 @@ def cli():
 @click.option("--label", "-l", default="good first issue", help="Label to filter")
 @click.option("--language", "-L", default=None, help="Programming language filter")
 @click.option("--stars-min", "-s", default=None, type=int, help="Minimum repo stars")
-@click.option("--limit", "-n", default=20, help="Max results")
+@click.option("--limit", "-n", default=20, help="Max results (gh search ceiling: 1000)")
 @click.option("--json-output", "json_out", is_flag=True, help="Output as JSON")
 @click.option("--csv", "csv_out", is_flag=True, help="Output as CSV")
 @click.option("--no-assigned/--assigned", default=True, help="Exclude assigned issues")

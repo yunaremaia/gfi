@@ -9,6 +9,12 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
 
+from rich.console import Console
+
+# Human-facing notices go to stderr whenever stdout carries a machine-readable
+# payload, so a piped consumer never sees them.
+err_console = Console(stderr=True)
+
 
 def _safe_repo_path(repo: str) -> str:
     """Build the ``owner/repo`` path for a `gh api repos/:owner/:repo` endpoint.
@@ -230,6 +236,11 @@ class GitHubSearcher:
             search_query_parts.append(f"created:>={created_after}")
 
         # gh search needs each term as separate arg, not a single string
+        if limit > 1000:
+            err_console.print(
+                f"[yellow]Warning: --limit {limit} exceeds the 1000-result "
+                f"ceiling for gh search; clamping to 1000.[/yellow]"
+            )
         cmd = [
             "gh", "search", "issues",
             *[t for t in search_query_parts if t.strip()],
@@ -318,6 +329,11 @@ class GitHubSearcher:
             search_terms.append(f"created:>={created_after}")
 
         # gh search needs each term as separate arg, not a single string
+        if limit > 1000:
+            err_console.print(
+                f"[yellow]Warning: --limit {limit} exceeds the 1000-result "
+                f"ceiling for gh search; clamping to 1000.[/yellow]"
+            )
         cmd = [
             "gh", "search", "issues",
             *[t for t in search_terms if t.strip()],
