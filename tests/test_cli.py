@@ -180,3 +180,43 @@ def test_csv_safe_preserves_numeric_and_safe_strings():
     assert _csv_safe("\r=1+2") == "'\r=1+2"
     assert _csv_safe("") == ""
 
+
+def test_issue_titles_with_rich_markup_tags_render_literally(monkeypatch):
+    iss = Issue(
+        number=42,
+        title="Stray [/bold] closing tag and [red]color[/red]",
+        repo="owner/project",
+        url="https://github.com/owner/project/issues/42",
+        state="open",
+        labels=["good first issue"],
+        stars=10,
+    )
+
+    class FakeSearcher:
+        def search(self, **kwargs):
+            return iter([iss])
+
+        def is_seen(self, issue):
+            return False
+
+        def _seen_key(self, issue):
+            return issue.url
+
+        def sort_deterministicly(self, issues):
+            return issues
+
+        def mark_seen(self, issue):
+            pass
+
+        _seen = {}
+
+    monkeypatch.setattr("gfi.cli.GitHubSearcher", FakeSearcher)
+
+    runner = CliRunner()
+    for command in [["search"], ["repo", "owner/project"], ["feed"]]:
+        result = runner.invoke(cli, command)
+        assert result.exit_code == 0
+        assert "[/bold]" in result.output
+        assert "[red]color[/red]" in result.output
+
+
