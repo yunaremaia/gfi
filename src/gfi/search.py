@@ -106,6 +106,7 @@ class GitHubSearcher:
                 cmd,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
                 timeout=30,
             )
             if result.returncode != 0:
@@ -121,7 +122,13 @@ class GitHubSearcher:
             "--jq", ".stargazers_count",
         ]
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                cmd,
+                capture_output=True, 
+                text=True, 
+                encoding="utf-8", 
+                timeout=10
+            )
             if result.returncode == 0:
                 return int(result.stdout.strip())
         except (ValueError, subprocess.TimeoutExpired, FileNotFoundError):
@@ -132,7 +139,13 @@ class GitHubSearcher:
         """Get primary language for a repo."""
         cmd = ["gh", "api", f"repos/{_safe_repo_path(repo)}", "--jq", ".language"]
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                cmd, 
+                capture_output=True, 
+                text=True, 
+                encoding="utf-8", 
+                timeout=10
+            )
             if result.returncode == 0:
                 lang = result.stdout.strip().strip('"')
                 return lang
@@ -144,7 +157,13 @@ class GitHubSearcher:
         """Get last push date for a repo."""
         cmd = ["gh", "api", f"repos/{_safe_repo_path(repo)}", "--jq", ".pushed_at"]
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                cmd, 
+                capture_output=True, 
+                text=True, 
+                encoding="utf-8", 
+                timeout=10
+            )
             if result.returncode == 0:
                 pushed_str = result.stdout.strip().strip('"')
                 if pushed_str:
@@ -251,7 +270,13 @@ class GitHubSearcher:
         ]
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(
+                cmd, 
+                capture_output=True, 
+                text=True,
+                encoding="utf-8", 
+                timeout=30
+            )
             if result.returncode != 0:
                 return
             items = json.loads(result.stdout)
@@ -345,7 +370,13 @@ class GitHubSearcher:
         ]
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(
+                cmd, 
+                capture_output=True, 
+                text=True,
+                encoding="utf-8", 
+                timeout=30
+            )
             if result.returncode != 0:
                 return
             items = json.loads(result.stdout)

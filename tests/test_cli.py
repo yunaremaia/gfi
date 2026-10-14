@@ -280,3 +280,32 @@ def test_open_exits_nonzero_when_opener_fails(monkeypatch):
     assert result.exit_code == 1
     assert "Failed to open" in result.output
 
+
+def test_search_subprocess_calls_use_utf8_encoding(monkeypatch):
+    """All gh subprocess calls must pass encoding='utf-8'.
+
+    Regression test for #106: on Windows, the default cp1252 codec
+    raised UnicodeDecodeError on UTF-8 output from gh, which caused
+    subprocess.run to return stdout=None and crash downstream.
+    """
+    calls = []
+
+    class FakeResult:
+        returncode = 0
+        stdout = "[]"
+        stderr = ""
+
+    def fake_run(*args, **kwargs):
+        calls.append(kwargs)
+        return FakeResult()
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+
+    result = CliRunner().invoke(cli, ["search", "--limit", "1"])
+
+    assert result.exit_code == 0
+    assert calls, "subprocess.run was not called during search"
+    for call_kwargs in calls:
+        assert call_kwargs.get("encoding") == "utf-8", (
+            f"subprocess.run called without encoding='utf-8': {call_kwargs}"
+        )
